@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
+using cryptography.CryptgraphyAlgorythms;
+
 namespace cryptography
 {
     public partial class Form1 : Form
@@ -15,6 +17,12 @@ namespace cryptography
         public Form1()
         {
             InitializeComponent();
+        }
+
+        private void chooseEnc_btn_Click(object sender, EventArgs e)
+        {
+            AesCrypt ac = new AesCrypt("ahojKokotkdsfsdfso",10);
+
         }
     }
 }
