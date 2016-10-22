@@ -1,7 +1,6 @@
 ﻿#region
 //https://msdn.microsoft.com/en-us/library/system.security.cryptography.aes(v=vs.110).aspx
 //http://csharphelper.com/blog/2014/09/encrypt-or-decrypt-files-in-c/
-//http://stackoverflow.com/questions/25013380/how-to-remove-padding-in-decryption-in-c-sharp
 #endregion
 
 using System;
@@ -48,18 +47,16 @@ namespace cryptography.CryptgraphyAlgorythms
             string encryptedFile = info.FullName.Replace(info.Extension,".enc");
 
             long actualPosition = base.WriteFileHeader(sourceFile, encryptedFile);
-
-            Stream inputStream = null;
-            Stream outputStream = null;
+            
+            Stream inputStream = new FileStream(sourceFile, FileMode.Open);
+            Stream outputStream = new FileStream(encryptedFile, FileMode.OpenOrCreate);
+            outputStream.Position = actualPosition;
 
             ICryptoTransform encryptor = aesProvider.CreateEncryptor();
             //alebo takto bez predosleho nastavovania key a IV
             //ICryptoTransform encryptor = aesProvider.CreateEncryptor(base.key,base.IV);
             try
             {
-                inputStream = new FileStream(sourceFile, FileMode.Open);
-                outputStream = new FileStream(encryptedFile, FileMode.OpenOrCreate);
-                outputStream.Position = actualPosition;
                 using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
                     const int bufferLength = 1024;
@@ -77,13 +74,10 @@ namespace cryptography.CryptgraphyAlgorythms
             }
             catch(Exception e)
             {
-                System.Windows.Forms.MessageBox.Show("An error occured while trying to encrypt file! \n" + e.Message,"Vnimanie!",
-                    System.Windows.Forms.MessageBoxButtons.OK,System.Windows.Forms.MessageBoxIcon.Error);
-            }
-            finally
-            {
                 inputStream.Close();
                 outputStream.Close();
+                System.Windows.Forms.MessageBox.Show("An error occured while trying to encrypt file! \n" + e.Message,"Vnimanie!",
+                    System.Windows.Forms.MessageBoxButtons.OK,System.Windows.Forms.MessageBoxIcon.Error);
             }
 
             encryptor.Dispose();
@@ -97,43 +91,32 @@ namespace cryptography.CryptgraphyAlgorythms
         public void DecryptFile(string encryptedFile)
         {
             InitializeAesProvider();
-            byte[] originalHmac = base.ReadFileHeader(encryptedFile); //metoda nastavi aj base.IV na spravnu hodnotu
-
-            aesProvider.IV = base.IV;
-            ICryptoTransform encryptor = aesProvider.CreateDecryptor();
+            byte[] hmac = base.ReadFileHeader(encryptedFile);
 
             FileInfo info = new FileInfo(encryptedFile);
             string decryptedFile = info.FullName.Replace(info.Extension, ".dec");
-            Stream inputStream = null;
-            StreamWriter outputStream = null;
 
+            Stream inputStream = new FileStream(encryptedFile, FileMode.Open);
+            Stream outputStream = new FileStream(decryptedFile, FileMode.OpenOrCreate);
+            inputStream.Position = hmac.Length + base.IV.Length;
+
+            aesProvider.IV = base.IV;
+            ICryptoTransform encryptor = aesProvider.CreateDecryptor();
             try
             {
-                inputStream = new FileStream(encryptedFile, FileMode.Open);
-                //outputStream = new FileStream(decryptedFile, FileMode.OpenOrCreate);
-                byte[] cyphertext = new byte[(int)info.Length - originalHmac.Length - base.IV.Length];
-                byte[] plainBytes = new byte[cyphertext.Length];
-                inputStream.Position = originalHmac.Length + base.IV.Length;
-                inputStream.Read(cyphertext, 0, cyphertext.Length);
-                MemoryStream ms = new MemoryStream(cyphertext);
-
-                using (CryptoStream cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Read))
+                using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
-                    cryptoStream.Read(plainBytes, 0, plainBytes.Length);
-                    outputStream = new StreamWriter(decryptedFile);
-                    outputStream.Write(Encoding.ASCII.GetString(plainBytes).TrimEnd('\0'));
-                    //const int bufferLength = 1024;
-                    //byte[] buffer = new byte[bufferLength];
-                    //int readedCount;
-                    //while (true)
-                    //{
-                    //    readedCount = inputStream.Read(buffer, 0, bufferLength);
-                    //    if (readedCount == 0) break;
-                        
-                    //    // Write the bytes into the CryptoStream.
-                    //    cryptoStream.Read(buffer, 0, readedCount);
-                    //    //buffer.
-                    //}
+                    const int bufferLength = 1024;
+                    byte[] buffer = new byte[bufferLength];
+                    int readedCount;
+                    while (true)
+                    {
+                        readedCount = inputStream.Read(buffer, 0, bufferLength);
+                        if (readedCount == 0) break;
+
+                        // Write the bytes into the CryptoStream.
+                        cryptoStream.Write(buffer, 0, readedCount);
+                    }
                 }
             }
             catch(Exception e)
@@ -141,12 +124,8 @@ namespace cryptography.CryptgraphyAlgorythms
                 System.Windows.Forms.MessageBox.Show("An error occured while trying to decrypt file! \n" + e.Message, "Vnimanie!",
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
             }
-            finally
-            {
-                encryptor.Dispose();
-                inputStream.Close();
-                outputStream.Close();
-            }
+
+            encryptor.Dispose();
         }
 
         private void InitializeAesProvider()
@@ -159,7 +138,7 @@ namespace cryptography.CryptgraphyAlgorythms
             base.IV = aesProvider.IV;
             base.blockSize = aesProvider.BlockSize * 8;
             aesProvider.Mode = CipherMode.CBC;
-            aesProvider.Padding = PaddingMode.ANSIX923;
+            aesProvider.Padding = PaddingMode.Zeros;
         }
 
         /// <summary>
