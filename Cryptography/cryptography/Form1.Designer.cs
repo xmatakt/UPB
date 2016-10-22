@@ -66,7 +66,6 @@
             this.chooseDec_btn.TabIndex = 3;
             this.chooseDec_btn.Text = "Browse...";
             this.chooseDec_btn.UseVisualStyleBackColor = true;
-            this.chooseDec_btn.Click += new System.EventHandler(this.chooseDec_btn_Click);
             // 
             // chooseDec_label
             // 
