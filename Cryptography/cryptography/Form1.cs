@@ -21,8 +21,22 @@ namespace cryptography
 
         private void chooseEnc_btn_Click(object sender, EventArgs e)
         {
-            AesCrypt ac = new AesCrypt("ahojKokotkdsfsdfso",10);
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string path = openFileDialog1.FileName;
+                AesCrypt ac = new AesCrypt("hesloNaPevno212");
+                ac.EncryptFile(path);
+            }
+        }
 
+        private void chooseDec_btn_Click_1(object sender, EventArgs e)
+        {
+            if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                string path = openFileDialog1.FileName;
+                AesCrypt ac = new AesCrypt("hesloNaPevno212");
+                ac.DecryptFile(path);
+            }
         }
     }
 }
