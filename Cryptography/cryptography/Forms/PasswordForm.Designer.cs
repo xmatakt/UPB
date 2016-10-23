@@ -37,7 +37,9 @@
             // password_textBox
             // 
             this.password_textBox.Location = new System.Drawing.Point(12, 29);
+            this.password_textBox.MaxLength = 14;
             this.password_textBox.Name = "password_textBox";
+            this.password_textBox.PasswordChar = '*';
             this.password_textBox.Size = new System.Drawing.Size(215, 22);
             this.password_textBox.TabIndex = 0;
             this.password_textBox.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
@@ -62,6 +64,7 @@
             this.password_checkBox.TabIndex = 2;
             this.password_checkBox.Text = "Show password";
             this.password_checkBox.UseVisualStyleBackColor = true;
+            this.password_checkBox.CheckedChanged += new System.EventHandler(this.password_checkBox_CheckedChanged);
             // 
             // password_btn
             // 

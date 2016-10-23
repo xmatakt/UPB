@@ -1,4 +1,6 @@
-﻿using System;
+﻿//http://stackoverflow.com/questions/8185747/how-can-i-unmask-c-sharp-password-textbox-and-mask-it-back-to-password
+
+using System;
 using System.Windows.Forms;
 //using System.Collections.Generic;
 //using System.ComponentModel;
@@ -46,6 +48,11 @@ namespace cryptography.Forms
         {
             if (e.KeyData == Keys.Enter)
                 this.DialogResult = System.Windows.Forms.DialogResult.OK;
+        }
+
+        private void password_checkBox_CheckedChanged(object sender, EventArgs e)
+        {
+            password_textBox.PasswordChar = password_checkBox.Checked ? '\0' : '*';
         }
     }
 }
