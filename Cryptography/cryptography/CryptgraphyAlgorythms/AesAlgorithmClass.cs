@@ -63,6 +63,7 @@ namespace cryptography.CryptgraphyAlgorythms
             try
             {
                 inputStream = new FileStream(sourceFile, FileMode.Open);
+                long inputLength = inputStream.Length;
                 outputStream = new FileStream(encryptedFile + "tmp", FileMode.OpenOrCreate);
                 using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
@@ -153,6 +154,8 @@ namespace cryptography.CryptgraphyAlgorythms
                     cryptoStream.Write(lastBuffer, 0, lastBuffer.Length);
 
                     cryptoStream.FlushFinalBlock();
+                    outputStream.Flush();
+                    outputStream.Close();
 
                     encryptor.Dispose();
                     TimeSpan ts = stopWatch.Elapsed;
@@ -188,7 +191,7 @@ namespace cryptography.CryptgraphyAlgorythms
 
             provider.Key = base.key;
             base.IV = provider.IV;
-            base.blockSize = provider.BlockSize * 8;
+            //base.blockSize = provider.BlockSize * 8;
             provider.Mode = CipherMode.CBC;
             provider.Padding = PaddingMode.Zeros;
         }

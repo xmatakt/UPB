@@ -140,6 +140,8 @@ namespace cryptography.CryptgraphyAlgorythms
                         cryptoStream.Write(buffer, 0, buffer.Length);
                     }
                     byte[] lastBuffer = new byte[inputStream.Length - originalHmac.Length - base.IV.Length - blocksCount * 1024];
+                    int tt = lastBuffer.Length;
+                    lastBuffer = TrimEnd(lastBuffer);
                     inputStream.Read(lastBuffer, 0, lastBuffer.Length);
                     cryptoStream.Write(lastBuffer, 0, lastBuffer.Length);
 
