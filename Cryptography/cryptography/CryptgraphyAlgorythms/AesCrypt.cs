@@ -29,7 +29,7 @@ namespace cryptography.CryptgraphyAlgorythms
         public AesCrypt(string password, int keyLength)
             : base(password, keyLength)
         {
-            EncryptFile("c:\\AATimo\\dsa.txt");
+
         }
 
         /// <summary>
@@ -42,26 +42,28 @@ namespace cryptography.CryptgraphyAlgorythms
 
         }
 
-        public void EncryptFile(string sourceFile)
+        /// <summary>
+        /// Metoda na zasifrovanie suboru ASE algoritmom v CBC mode.
+        /// </summary>
+        /// <param name="sourceFile">Cesta k suboru, ktory bma byt zasifrovany.</param>
+        public string EncryptFile(string sourceFile)
         {
+            System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
+            stopWatch.Start();
+
             InitializeAesProvider();
 
             FileInfo info = new FileInfo(sourceFile);
             string encryptedFile = info.FullName.Replace(info.Extension, ".enc");
 
-            //long actualPosition = base.WriteFileHeader(sourceFile, encryptedFile);
-
             Stream inputStream = null;
             Stream outputStream = null;
 
             ICryptoTransform encryptor = aesProvider.CreateEncryptor();
-            //alebo takto bez predosleho nastavovania key a IV
-            //ICryptoTransform encryptor = aesProvider.CreateEncryptor(base.key,base.IV);
             try
             {
                 inputStream = new FileStream(sourceFile, FileMode.Open);
                 outputStream = new FileStream(encryptedFile + "tmp", FileMode.OpenOrCreate);
-                //outputStream.Position = actualPosition;
                 using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
                     const int bufferLength = 1024;
@@ -85,19 +87,26 @@ namespace cryptography.CryptgraphyAlgorythms
                     outputStream.Close();
                     File.Delete(encryptedFile + "tmp");
                 }
+
+                encryptor.Dispose();
+                TimeSpan ts = stopWatch.Elapsed;
+                string elapsedTime = String.Format("{0:00}:{1:00}.{2:00}s", ts.Minutes, ts.Seconds,
+                    ts.Milliseconds / 10);
+
+                return elapsedTime;
             }
             catch (Exception e)
             {
                 System.Windows.Forms.MessageBox.Show("An error occured while trying to encrypt file! \n" + e.Message, "Vnimanie!",
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return "ERROR";
             }
             finally
             {
                 inputStream.Close();
-                //outputStream.Close();
             }
 
-            encryptor.Dispose();
+            
         }
 
         /// <summary>
@@ -105,8 +114,11 @@ namespace cryptography.CryptgraphyAlgorythms
         /// a zapise do noveho suboru s rovnakym nazvom ako zasifrovany subor a priponou .dec.
         /// </summary>
         /// <param name="encryptedFile">Cesta ku zasifrovanemu suboru.</param>
-        public void DecryptFile(string encryptedFile)
+        public string DecryptFile(string encryptedFile)
         {
+            System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
+            stopWatch.Start();
+
             InitializeAesProvider();
             byte[] originalHmac = base.ReadFileHeader(encryptedFile);
 
@@ -142,15 +154,21 @@ namespace cryptography.CryptgraphyAlgorythms
                     cryptoStream.Write(lastBuffer, 0, lastBuffer.Length);
 
                     cryptoStream.FlushFinalBlock();
+
+                    encryptor.Dispose();
+                    TimeSpan ts = stopWatch.Elapsed;
+                    string elapsedTime = String.Format("{0:00}:{1:00}.{2:00}s", ts.Minutes, ts.Seconds,
+                        ts.Milliseconds / 10);
+
+                    return elapsedTime;
                 }
             }
             catch (Exception ex)
             {
                 System.Windows.Forms.MessageBox.Show("An error occured while trying to decrypt file! \n" + ex.Message, "Vnimanie!",
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return "ERROR";
             }
-
-            encryptor.Dispose();
         }
 
         private void InitializeAesProvider()
@@ -183,7 +201,7 @@ namespace cryptography.CryptgraphyAlgorythms
             return result;
         }
 
-        public static byte[] TrimEnd(byte[] array)
+        private static byte[] TrimEnd(byte[] array)
         {
             int lastIndex = Array.FindLastIndex(array, b => b != 0);
 

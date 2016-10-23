@@ -9,11 +9,15 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 using cryptography.CryptgraphyAlgorythms;
+using cryptography.Forms;
 
 namespace cryptography
 {
     public partial class Form1 : Form
     {
+        private string sourceFile = "";
+        private string encryptedFile = "";
+        private PasswordForm passwordForm;
         public Form1()
         {
             InitializeComponent();
@@ -23,9 +27,23 @@ namespace cryptography
         {
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                string path = openFileDialog1.FileName;
-                AesCrypt ac = new AesCrypt("hesloNaPevno212");
-                ac.EncryptFile(path);
+                sourceFile = openFileDialog1.FileName;
+                try
+                {
+                    passwordForm = new PasswordForm(sourceFile, true);
+                    if (passwordForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        AesCrypt ac = new AesCrypt(passwordForm.Password);
+                        encTime_label.Text = ac.EncryptFile(sourceFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occured while trying to encrypt data!\n" + ex.Message, "Vnimanie!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                //AesCrypt ac = new AesCrypt("hesloNaPevno212");
+                //ac.EncryptFile(path);
             }
         }
 
@@ -33,10 +51,29 @@ namespace cryptography
         {
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                string path = openFileDialog1.FileName;
-                AesCrypt ac = new AesCrypt("hesloNaPevno212");
-                ac.DecryptFile(path);
+                string encryptedFile = openFileDialog1.FileName;
+                try
+                {
+                    passwordForm = new PasswordForm(encryptedFile, false);
+                    if (passwordForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        AesCrypt ac = new AesCrypt(passwordForm.Password);
+                        decTime_label.Text = ac.DecryptFile(encryptedFile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("An error occured while trying to encrypt data!\n" + ex.Message, "Vnimanie!",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                //AesCrypt ac = new AesCrypt("hesloNaPevno212");
+                //ac.DecryptFile(path);
             }
+        }
+
+        private void encrypt_btn_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -54,79 +54,45 @@ namespace cryptography.CryptgraphyAlgorythms
         }
 
         /// <summary>
-        /// Zapise HMAC a IV na zaciatok zasifrovaneho suboru.
+        /// Zapise HMAC a IV na zaciatok zasifrovaneho suboru, a samotny zasifrovany subor.
         /// </summary>
-        /// <param name="sourceFile">Cesta ku filu, z ktoreho sa odvodi HMAC.</param>
-        /// <param name="destinationFile">Cesta ku zasifrovanemu subora.</param>
-        /// <returns>Vrati poziciu na ktorej sa skoncilo zapisovanie alebo -1 ak sa vyskytne chyba.</returns>
-        protected long WriteFileHeader(string sourceFile, string destinationFile)
+        /// <param name="cyphertext">Stream so cyphertextom.</param>
+        /// <param name="destinationFile">Cesta ku zasifrovanemu suboru.</param>
+        protected void WriteEncryptedFile(Stream cyphertext, string destinationFile)
         {
             HMACSHA256 hmac = new HMACSHA256(key);
+            byte[] hash;
+
+            cyphertext.Position = 0;
+            if (cyphertext.Length > magicConstant)
+            {
+                byte[] arr = new byte[magicConstant];
+                for (int i = 0; i < arr.Length; i++)
+                    arr[i] = Convert.ToByte(cyphertext.ReadByte());
+                hash = hmac.ComputeHash(arr, 0, magicConstant);
+            }
+            else
+                hash = hmac.ComputeHash(cyphertext);
+
             try
             {
-                using (FileStream inputStream = new FileStream(sourceFile, FileMode.Open))
-                {
-                    byte[] hash = hmac.ComputeHash(inputStream);
-                    using (FileStream outputStream = new FileStream(destinationFile, FileMode.OpenOrCreate))
-                    {
-                        outputStream.Write(hash, 0, hash.Length);
-                        outputStream.Write(IV, 0, IV.Length);
-                        return outputStream.Position;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                System.Windows.Forms.MessageBox.Show("An error occured while writting encrypted file header!\n" + e.Message,
-                    "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return -1;
-            }
-        }
-
-        protected long WriteEncryptedFile(Stream cyphertext, string destinationFile)
-        {
-            HMACSHA256 hmac = new HMACSHA256(key);
-     
-            try
-            {
-                byte[] hash;
-
-                cyphertext.Position = 0;
-                if (cyphertext.Length > magicConstant)
-                {
-                    byte[] arr = new byte[magicConstant];
-                    for (int i = 0; i < arr.Length; i++)
-                        arr[i] = Convert.ToByte(cyphertext.ReadByte());
-                    hash = hmac.ComputeHash(arr, 0, magicConstant);
-                }
-                else
-                    hash = hmac.ComputeHash(cyphertext);
-
                 cyphertext.Position = 0;
                 using (FileStream outputStream = new FileStream(destinationFile, FileMode.OpenOrCreate))
                 {
                     outputStream.Write(hash, 0, hash.Length);
                     outputStream.Write(IV, 0, IV.Length);
                     cyphertext.Position = 0;
-                    long count = 0;
                     long length = cyphertext.Length;
                     cyphertext.CopyTo(outputStream);
-                    //while (count < cyphertext.Length)
-                    //{
-                    //    outputStream.WriteByte(Convert.ToByte(cyphertext.ReadByte()));
-                    //    count++;
-
-                    //    if (count % 500000 == 0)
-                    //        System.Diagnostics.Debug.WriteLine(count+"/"+length);
-                    //}
-                    return outputStream.Position;
+                    
+                    outputStream.Flush();
+                    outputStream.Close();
                 }
             }
             catch (Exception e)
             {
                 System.Windows.Forms.MessageBox.Show("An error occured while writting encrypted file header!\n" + e.Message,
                     "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return -1;
             }
         }
 
@@ -162,26 +128,8 @@ namespace cryptography.CryptgraphyAlgorythms
         /// <summary>
         /// Metoda vygeneruje hash pre decryptovany subor.
         /// </summary>
-        /// <param name="sourceFile"></param>
+        /// <param name="cyphertextStream">Stream so cyphertextom.</param>
         /// <returns></returns>
-        protected byte[] GenerateHMAC(string sourceFile)
-        {
-            HMACSHA256 hmac = new HMACSHA256(key);
-            try
-            {
-                using (FileStream inputStream = new FileStream(sourceFile, FileMode.Open))
-                {
-                    return hmac.ComputeHash(inputStream);
-                }
-            }
-            catch (Exception e)
-            {
-                System.Windows.Forms.MessageBox.Show("An error occured while trying to get HMAC for decrypted file!\n" + e.Message,
-                    "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
-                return null;
-            }
-        }
-
         protected byte[] GenerateHMAC(Stream cyphertextStream)
         {
             HMACSHA256 hmac = new HMACSHA256(key);
