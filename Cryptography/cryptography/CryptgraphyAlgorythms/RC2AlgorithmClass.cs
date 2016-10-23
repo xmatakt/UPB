@@ -1,32 +1,19 @@
-﻿#region
-//https://msdn.microsoft.com/en-us/library/system.security.cryptography.aes(v=vs.110).aspx
-//http://csharphelper.com/blog/2014/09/encrypt-or-decrypt-files-in-c/
-//http://stackoverflow.com/questions/25013380/how-to-remove-padding-in-decryption-in-c-sharp
-#endregion
-
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using System.Security.Cryptography;
+﻿using System;
 using System.IO;
-
-using cryptography.Interfaces;
+using System.Security.Cryptography;
 
 namespace cryptography.CryptgraphyAlgorythms
 {
-    public class AesCrypt : BaseCryptographyClass
+    class RC2AlgorithmClass : BaseCryptographyClass
     {
-        private AesCryptoServiceProvider aesProvider;
+        private RC2CryptoServiceProvider provider;
 
         /// <summary>
         /// Konstruktor pre triedu pokryvajucu sifrovanie a desifrovanie suborov pomocou AES algoritmu.
         /// </summary>
         /// <param name="password">Heslo na zaklade ktoreho je vygenerovany kluc.</param>
         /// <param name="keyLength">Dlzka vygenerovanieho kluca.</param>
-        public AesCrypt(string password, int keyLength)
+        public RC2AlgorithmClass(string password, int keyLength)
             : base(password, keyLength)
         {
 
@@ -36,7 +23,7 @@ namespace cryptography.CryptgraphyAlgorythms
         /// Konstruktor pre triedu pokryvajucu sifrovanie a desifrovanie suborov pomocou AES algoritmu.
         /// </summary>
         /// <param name="password">Heslo na zaklade ktoreho je vygenerovany kluc.</param>
-        public AesCrypt(string password)
+        public RC2AlgorithmClass(string password)
             : base(password)
         {
 
@@ -51,7 +38,7 @@ namespace cryptography.CryptgraphyAlgorythms
             System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
             stopWatch.Start();
 
-            InitializeAesProvider();
+            InitializeProvider();
 
             FileInfo info = new FileInfo(sourceFile);
             string encryptedFile = info.FullName.Replace(info.Extension, ".enc");
@@ -59,7 +46,7 @@ namespace cryptography.CryptgraphyAlgorythms
             Stream inputStream = null;
             Stream outputStream = null;
 
-            ICryptoTransform encryptor = aesProvider.CreateEncryptor();
+            ICryptoTransform encryptor = provider.CreateEncryptor();
             try
             {
                 inputStream = new FileStream(sourceFile, FileMode.Open);
@@ -105,8 +92,6 @@ namespace cryptography.CryptgraphyAlgorythms
             {
                 inputStream.Close();
             }
-
-            
         }
 
         /// <summary>
@@ -119,7 +104,7 @@ namespace cryptography.CryptgraphyAlgorythms
             System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
             stopWatch.Start();
 
-            InitializeAesProvider();
+            InitializeProvider();
             byte[] originalHmac = base.ReadFileHeader(encryptedFile);
 
             FileInfo info = new FileInfo(encryptedFile);
@@ -130,10 +115,11 @@ namespace cryptography.CryptgraphyAlgorythms
             inputStream.Position = originalHmac.Length + base.IV.Length;
             byte[] newHmac = base.GenerateHMAC(inputStream);
             inputStream.Position = originalHmac.Length + base.IV.Length;
-            Exception e = new Exception("Data integrity was endangered or entered password is incorrect!");
+            Exception e = new Exception("Data integrity was maybe endangered!\nBe sure that entered password is incorrect!"
+                   + "\nBe sure you are using right algorithm!");
 
-            aesProvider.IV = base.IV;
-            ICryptoTransform encryptor = aesProvider.CreateDecryptor();
+            provider.IV = base.IV;
+            ICryptoTransform encryptor = provider.CreateDecryptor();
             try
             {
                 if (!base.CompareHmacs(originalHmac, newHmac))
@@ -169,19 +155,29 @@ namespace cryptography.CryptgraphyAlgorythms
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 return "ERROR";
             }
+            finally
+            {
+                inputStream.Flush();
+                inputStream.Close();
+                if (outputStream.CanWrite)
+                {
+                    outputStream.Flush();
+                    outputStream.Close();
+                }
+            }
         }
 
-        private void InitializeAesProvider()
+        private void InitializeProvider()
         {
-            aesProvider = new AesCryptoServiceProvider();
+            provider = new RC2CryptoServiceProvider();
             base.GenerateKey(GetKeyLength() / 8);
-            aesProvider.GenerateIV();
+            provider.GenerateIV();
 
-            aesProvider.Key = base.key;
-            base.IV = aesProvider.IV;
-            base.blockSize = aesProvider.BlockSize * 8;
-            aesProvider.Mode = CipherMode.CBC;
-            aesProvider.Padding = PaddingMode.Zeros;
+            provider.Key = base.key;
+            base.IV = provider.IV;
+            base.blockSize = provider.BlockSize * 8;
+            provider.Mode = CipherMode.CBC;
+            provider.Padding = PaddingMode.Zeros;
         }
 
         /// <summary>
@@ -192,7 +188,7 @@ namespace cryptography.CryptgraphyAlgorythms
         {
             int result = 0;
             for (int i = 1024; i > 1; i--)
-                if (aesProvider.ValidKeySize(i))
+                if (provider.ValidKeySize(i))
                 {
                     result = i;
                     break;

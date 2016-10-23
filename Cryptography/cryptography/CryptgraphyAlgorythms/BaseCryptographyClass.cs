@@ -114,6 +114,9 @@ namespace cryptography.CryptgraphyAlgorythms
                     inputStream.Read(result, 0, 32);
                     //dalsich x bajtov je inicializacny vektor
                     inputStream.Read(IV, 0, IV.Length);
+
+                    inputStream.Flush();
+                    inputStream.Close();
                     return result;
                 }
             }

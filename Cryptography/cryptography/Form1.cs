@@ -33,8 +33,21 @@ namespace cryptography
                     passwordForm = new PasswordForm(sourceFile, true);
                     if (passwordForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
-                        AesCrypt ac = new AesCrypt(passwordForm.Password);
-                        encTime_label.Text = ac.EncryptFile(sourceFile);
+                        if(AES_rb.Checked)
+                        {
+                            AesAlgorithmClass ac = new AesAlgorithmClass(passwordForm.Password);
+                            encTime_label.Text = ac.EncryptFile(sourceFile);
+                        }
+                        if (des_rb.Checked)
+                        {
+                            TripleDesAlgorithmClass ac = new TripleDesAlgorithmClass(passwordForm.Password);
+                            encTime_label.Text = ac.EncryptFile(sourceFile);
+                        }
+                        if (rc2_rb.Checked)
+                        {
+                            RC2AlgorithmClass ac = new RC2AlgorithmClass(passwordForm.Password);
+                            encTime_label.Text = ac.EncryptFile(sourceFile);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -57,8 +70,21 @@ namespace cryptography
                     passwordForm = new PasswordForm(encryptedFile, false);
                     if (passwordForm.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
-                        AesCrypt ac = new AesCrypt(passwordForm.Password);
-                        decTime_label.Text = ac.DecryptFile(encryptedFile);
+                        if (AES_rb.Checked)
+                        {
+                            AesAlgorithmClass ac = new AesAlgorithmClass(passwordForm.Password);
+                            decTime_label.Text = ac.DecryptFile(encryptedFile);
+                        }
+                        if (des_rb.Checked)
+                        {
+                            TripleDesAlgorithmClass ac = new TripleDesAlgorithmClass(passwordForm.Password);
+                            decTime_label.Text = ac.DecryptFile(encryptedFile);
+                        }
+                        if (rc2_rb.Checked)
+                        {
+                            RC2AlgorithmClass ac = new RC2AlgorithmClass(passwordForm.Password);
+                            decTime_label.Text = ac.DecryptFile(encryptedFile);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -69,11 +95,6 @@ namespace cryptography
                 //AesCrypt ac = new AesCrypt("hesloNaPevno212");
                 //ac.DecryptFile(path);
             }
-        }
-
-        private void encrypt_btn_Click(object sender, EventArgs e)
-        {
-
         }
     }
 }
