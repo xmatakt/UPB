@@ -26,6 +26,7 @@ namespace cryptography.CryptgraphyAlgorythms
         };
         private int iterationsCount = 100;
         private string password = "";
+        private const int magicConstant = 1024 * 10;
 
         protected byte[] IV;
         protected byte[] key;
@@ -72,6 +73,53 @@ namespace cryptography.CryptgraphyAlgorythms
                         outputStream.Write(IV, 0, IV.Length);
                         return outputStream.Position;
                     }
+                }
+            }
+            catch (Exception e)
+            {
+                System.Windows.Forms.MessageBox.Show("An error occured while writting encrypted file header!\n" + e.Message,
+                    "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return -1;
+            }
+        }
+
+        protected long WriteEncryptedFile(Stream cyphertext, string destinationFile)
+        {
+            HMACSHA256 hmac = new HMACSHA256(key);
+     
+            try
+            {
+                byte[] hash;
+
+                cyphertext.Position = 0;
+                if (cyphertext.Length > magicConstant)
+                {
+                    byte[] arr = new byte[magicConstant];
+                    for (int i = 0; i < arr.Length; i++)
+                        arr[i] = Convert.ToByte(cyphertext.ReadByte());
+                    hash = hmac.ComputeHash(arr, 0, magicConstant);
+                }
+                else
+                    hash = hmac.ComputeHash(cyphertext);
+
+                cyphertext.Position = 0;
+                using (FileStream outputStream = new FileStream(destinationFile, FileMode.OpenOrCreate))
+                {
+                    outputStream.Write(hash, 0, hash.Length);
+                    outputStream.Write(IV, 0, IV.Length);
+                    cyphertext.Position = 0;
+                    long count = 0;
+                    long length = cyphertext.Length;
+                    cyphertext.CopyTo(outputStream);
+                    //while (count < cyphertext.Length)
+                    //{
+                    //    outputStream.WriteByte(Convert.ToByte(cyphertext.ReadByte()));
+                    //    count++;
+
+                    //    if (count % 500000 == 0)
+                    //        System.Diagnostics.Debug.WriteLine(count+"/"+length);
+                    //}
+                    return outputStream.Position;
                 }
             }
             catch (Exception e)
@@ -132,6 +180,38 @@ namespace cryptography.CryptgraphyAlgorythms
                     "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
                 return null;
             }
+        }
+
+        protected byte[] GenerateHMAC(Stream cyphertextStream)
+        {
+            HMACSHA256 hmac = new HMACSHA256(key);
+            try
+            {
+                if (cyphertextStream.Length > magicConstant)
+                {
+                    byte[] arr = new byte[magicConstant];
+                    for (int i = 0; i < arr.Length; i++)
+                        arr[i] = Convert.ToByte(cyphertextStream.ReadByte());
+                     return hmac.ComputeHash(arr, 0, magicConstant);
+                }
+                else
+                    return hmac.ComputeHash(cyphertextStream);
+            }
+            catch (Exception e)
+            {
+                System.Windows.Forms.MessageBox.Show("An error occured while trying to get HMAC for decrypted file!\n" + e.Message,
+                    "Vnimanie", System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
+                return null;
+            }
+        }
+
+        protected bool CompareHmacs(byte[] hmac1, byte[] hmac2)
+        {
+            for (int i = 0; i < hmac1.Length; i++)
+                if (hmac1[i] != hmac2[i])
+                    return false;
+
+            return true;
         }
     }
 }

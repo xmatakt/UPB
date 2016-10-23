@@ -16,9 +16,9 @@ using System.IO;
 using cryptography.Interfaces;
 
 namespace cryptography.CryptgraphyAlgorythms
-{   
+{
     public class AesCrypt : BaseCryptographyClass
-    {   
+    {
         private AesCryptoServiceProvider aesProvider;
 
         /// <summary>
@@ -26,7 +26,8 @@ namespace cryptography.CryptgraphyAlgorythms
         /// </summary>
         /// <param name="password">Heslo na zaklade ktoreho je vygenerovany kluc.</param>
         /// <param name="keyLength">Dlzka vygenerovanieho kluca.</param>
-        public AesCrypt(string password, int keyLength) : base(password, keyLength)
+        public AesCrypt(string password, int keyLength)
+            : base(password, keyLength)
         {
             EncryptFile("c:\\AATimo\\dsa.txt");
         }
@@ -35,7 +36,8 @@ namespace cryptography.CryptgraphyAlgorythms
         /// Konstruktor pre triedu pokryvajucu sifrovanie a desifrovanie suborov pomocou AES algoritmu.
         /// </summary>
         /// <param name="password">Heslo na zaklade ktoreho je vygenerovany kluc.</param>
-        public AesCrypt(string password) : base(password)
+        public AesCrypt(string password)
+            : base(password)
         {
 
         }
@@ -45,9 +47,9 @@ namespace cryptography.CryptgraphyAlgorythms
             InitializeAesProvider();
 
             FileInfo info = new FileInfo(sourceFile);
-            string encryptedFile = info.FullName.Replace(info.Extension,".enc");
+            string encryptedFile = info.FullName.Replace(info.Extension, ".enc");
 
-            long actualPosition = base.WriteFileHeader(sourceFile, encryptedFile);
+            //long actualPosition = base.WriteFileHeader(sourceFile, encryptedFile);
 
             Stream inputStream = null;
             Stream outputStream = null;
@@ -58,13 +60,14 @@ namespace cryptography.CryptgraphyAlgorythms
             try
             {
                 inputStream = new FileStream(sourceFile, FileMode.Open);
-                outputStream = new FileStream(encryptedFile, FileMode.OpenOrCreate);
-                outputStream.Position = actualPosition;
+                outputStream = new FileStream(encryptedFile + "tmp", FileMode.OpenOrCreate);
+                //outputStream.Position = actualPosition;
                 using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
                     const int bufferLength = 1024;
                     byte[] buffer = new byte[bufferLength];
                     int readedCount;
+                    int countTmp = 0;
                     while (true)
                     {
                         readedCount = inputStream.Read(buffer, 0, bufferLength);
@@ -72,18 +75,26 @@ namespace cryptography.CryptgraphyAlgorythms
 
                         // Write the bytes into the CryptoStream.
                         cryptoStream.Write(buffer, 0, readedCount);
+                        if (countTmp % 500 == 0)
+                            System.Diagnostics.Debug.WriteLine(countTmp);
+                        countTmp++;
                     }
+                    cryptoStream.FlushFinalBlock();
+                    outputStream.Flush();
+                    base.WriteEncryptedFile(outputStream, encryptedFile);
+                    outputStream.Close();
+                    File.Delete(encryptedFile + "tmp");
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                System.Windows.Forms.MessageBox.Show("An error occured while trying to encrypt file! \n" + e.Message,"Vnimanie!",
-                    System.Windows.Forms.MessageBoxButtons.OK,System.Windows.Forms.MessageBoxIcon.Error);
+                System.Windows.Forms.MessageBox.Show("An error occured while trying to encrypt file! \n" + e.Message, "Vnimanie!",
+                    System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
             }
             finally
             {
                 inputStream.Close();
-                outputStream.Close();
+                //outputStream.Close();
             }
 
             encryptor.Dispose();
@@ -97,44 +108,49 @@ namespace cryptography.CryptgraphyAlgorythms
         public void DecryptFile(string encryptedFile)
         {
             InitializeAesProvider();
-            byte[] originalHmac = base.ReadFileHeader(encryptedFile); //metoda nastavi aj base.IV na spravnu hodnotu
-
-            aesProvider.IV = base.IV;
-            ICryptoTransform encryptor = aesProvider.CreateDecryptor();
+            byte[] originalHmac = base.ReadFileHeader(encryptedFile);
 
             FileInfo info = new FileInfo(encryptedFile);
             string decryptedFile = info.FullName.Replace(info.Extension, ".dec");
-            Stream inputStream = null;
-            StreamWriter outputStream = null;
 
+            Stream inputStream = new FileStream(encryptedFile, FileMode.Open);
+            Stream outputStream = new FileStream(decryptedFile, FileMode.OpenOrCreate);
+            inputStream.Position = originalHmac.Length + base.IV.Length;
+            byte[] newHmac = base.GenerateHMAC(inputStream);
+            inputStream.Position = originalHmac.Length + base.IV.Length;
+            Exception e = new Exception("Data integrity was endangered or entered password is incorrect!");
+
+            aesProvider.IV = base.IV;
+            ICryptoTransform encryptor = aesProvider.CreateDecryptor();
             try
             {
-                inputStream = new FileStream(encryptedFile, FileMode.Open);
-                //outputStream = new FileStream(decryptedFile, FileMode.OpenOrCreate);
-                byte[] cyphertext = new byte[(int)info.Length - originalHmac.Length - base.IV.Length];
-                byte[] plainBytes = new byte[cyphertext.Length];
-                inputStream.Position = originalHmac.Length + base.IV.Length;
-                inputStream.Read(cyphertext, 0, cyphertext.Length);
-                MemoryStream ms = new MemoryStream(cyphertext);
-
-                using (CryptoStream cryptoStream = new CryptoStream(ms, encryptor, CryptoStreamMode.Read))
+                if (!base.CompareHmacs(originalHmac, newHmac))
+                    throw e;
+                using (CryptoStream cryptoStream = new CryptoStream(outputStream, encryptor, CryptoStreamMode.Write))
                 {
-                    cryptoStream.Read(plainBytes, 0, plainBytes.Length);
-                    outputStream = new StreamWriter(decryptedFile);
-                    outputStream.Write(Encoding.ASCII.GetString(plainBytes).TrimEnd('\0'));
+                    const int bufferLength = 1024;
+
+                    long blocksCount = (inputStream.Length - originalHmac.Length + base.IV.Length) / 1024;
+                    for (long i = 0; i < blocksCount; i++)
+                    {
+                        byte[] buffer = new byte[bufferLength];
+                        inputStream.Read(buffer, 0, bufferLength);
+                        cryptoStream.Write(buffer, 0, buffer.Length);
+                    }
+                    byte[] lastBuffer = new byte[inputStream.Length - originalHmac.Length - base.IV.Length - blocksCount * 1024];
+                    inputStream.Read(lastBuffer, 0, lastBuffer.Length);
+                    cryptoStream.Write(lastBuffer, 0, lastBuffer.Length);
+
+                    cryptoStream.FlushFinalBlock();
                 }
             }
-            catch(Exception e)
+            catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show("An error occured while trying to decrypt file! \n" + e.Message, "Vnimanie!",
+                System.Windows.Forms.MessageBox.Show("An error occured while trying to decrypt file! \n" + ex.Message, "Vnimanie!",
                     System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Error);
             }
-            finally
-            {
-                encryptor.Dispose();
-                inputStream.Close();
-                outputStream.Close();
-            }
+
+            encryptor.Dispose();
         }
 
         private void InitializeAesProvider()
@@ -164,8 +180,16 @@ namespace cryptography.CryptgraphyAlgorythms
                     break;
                 }
 
-             return result;
+            return result;
+        }
+
+        public static byte[] TrimEnd(byte[] array)
+        {
+            int lastIndex = Array.FindLastIndex(array, b => b != 0);
+
+            Array.Resize(ref array, lastIndex + 1);
+
+            return array;
         }
     }
 }
-
