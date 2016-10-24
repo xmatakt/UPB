@@ -19,12 +19,12 @@ namespace cryptography.Forms
 
         public PasswordForm(string pathToFile, bool encrypt)
         {
-            //System.IO.FileInfo fileInfo = new System.IO.FileInfo(pathToFile);
+            System.IO.FileInfo fileInfo = new System.IO.FileInfo(pathToFile);
             InitializeComponent();
-            //if (encrypt)
-            //    password_label.Text = "Enter password to encrypt " + fileInfo.Name + ":";
-            //else
-            //    password_label.Text = "Enter password to decrypt " + fileInfo.Name + ":";
+            if (encrypt)
+                password_label.Text = "Enter password to encrypt " + fileInfo.Name + ":";
+            else
+                password_label.Text = "Enter password to decrypt " + fileInfo.Name + ":";
         }
 
         private void PasswordForm_Load(object sender, EventArgs e)
