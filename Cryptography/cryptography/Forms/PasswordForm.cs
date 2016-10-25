@@ -2,13 +2,6 @@
 
 using System;
 using System.Windows.Forms;
-//using System.Collections.Generic;
-//using System.ComponentModel;
-//using System.Data;
-//using System.Drawing;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
 
 
 namespace cryptography.Forms
@@ -25,6 +18,8 @@ namespace cryptography.Forms
                 password_label.Text = "Enter password to encrypt " + fileInfo.Name + ":";
             else
                 password_label.Text = "Enter password to decrypt " + fileInfo.Name + ":";
+
+            Password = "akUzivatelNicNezada";
         }
 
         private void PasswordForm_Load(object sender, EventArgs e)

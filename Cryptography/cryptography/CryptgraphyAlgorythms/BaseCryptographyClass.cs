@@ -6,10 +6,6 @@
 using System;
 using System.Security.Cryptography;
 using System.IO;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
 
 namespace cryptography.CryptgraphyAlgorythms
 {
@@ -25,7 +21,7 @@ namespace cryptography.CryptgraphyAlgorythms
             0xF1, 0xF0, 0xEE, 0x21, 0x22, 0x45 
         };
         private int iterationsCount = 100;
-        private string password = "";
+        private string password = "heslo";
         private const int magicConstant = 1024 * 10;
 
         protected byte[] IV;

@@ -1,10 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
 using System.IO;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
 
 namespace cryptography.CryptgraphyAlgorythms
 {
@@ -119,7 +115,7 @@ namespace cryptography.CryptgraphyAlgorythms
             inputStream.Position = originalHmac.Length + base.IV.Length;
             byte[] newHmac = base.GenerateHMAC(inputStream);
             inputStream.Position = originalHmac.Length + base.IV.Length;
-            Exception e = new Exception("Data integrity was maybe endangered!\nBe sure that entered password is incorrect!"
+            Exception e = new Exception("Data integrity was maybe endangered!\nBe sure that entered password is correct!"
                 + "\nBe sure you are using right algorithm!");
 
             provider.IV = base.IV;
