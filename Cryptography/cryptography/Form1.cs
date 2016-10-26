@@ -19,6 +19,8 @@ namespace cryptography
 
         private void chooseEnc_btn_Click(object sender, EventArgs e)
         {
+            openFileDialog1.Filter = "All files (*.*)|*.*";
+            openFileDialog1.FileName = "";
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 sourceFile = openFileDialog1.FileName;
@@ -56,6 +58,8 @@ namespace cryptography
 
         private void chooseDec_btn_Click_1(object sender, EventArgs e)
         {
+            openFileDialog1.FileName = "";
+            openFileDialog1.Filter = "Encrypted files (*.enc)|*.enc";
             if (openFileDialog1.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string encryptedFile = openFileDialog1.FileName;
